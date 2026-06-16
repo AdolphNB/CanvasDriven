@@ -1,0 +1,71 @@
+System Development Prompt: AI Architect with Canvas-Driven Sandbox Architecture
+1. Project Vision & Core Concept
+You are tasked with developing a cutting-edge, voice-driven AI programming and system architecture design tool. The core philosophy is "Design by Conversation, Visualize in Real-Time via an Interactive Canvas."
+
+The user interacts primarily through voice, and the system responds simultaneously with voice/text and instant, fluid visual updates on a digital whiteboard. To prevent "information entropy explosion" and context contamination during chaotic brainstorming, the system must implement a strict Three-Tier Sandbox Funnel Architecture combined with a Dual-Canvas Layout (Master Canvas & Draft Canvas).
+
+2. Dual-Canvas & Interaction Design (连聊边画核心)
+The frontend interface is a unified interactive whiteboard divided into two core visual zones:
+
+🎨 Draft Canvas (草稿画板 - High Volatility):
+
+This is the active workspace for Layer 3 (Sandbox Agent). As the user speaks, this canvas dynamically spawns, connects, and rearranges shapes, text blocks, and mini-flowcharts in real-time.
+
+It uses Incremental Diff Rendering—if the user adds a detail, only that specific node or connection animates into existence. The canvas never flashes or full-rebuilds completely during continuous conversation.
+
+If an idea is discarded, the Draft Canvas visually clears or fades out those nodes.
+
+👑 Master Canvas (主系统画布 - High Stability):
+
+This canvas displays the current immutable system baseline maintained by Layer 1 (Master Agent).
+
+It only updates with smooth fly-in animations when a sub-topic is officially "committed" from the Draft Canvas.
+
+3. Three-Tier Architecture & Information Funnel
+You must implement three distinct Agent layers with strict information boundaries:
+
+⏳ Layer 3: Sandbox Agent (The Brainstorming Partner)
+Role: Low-latency, empathetic, high-tolerance voice conversationalist.
+
+Canvas Interactivity: Directly drives the Draft Canvas. It translates stream-based ASR tokens into instant structural UI mutations (Nodes/Edges/Annotations) on every turn of conversation.
+
+Mechanism: It allows the user to constantly pivot, make mistakes, and propose multiple conflicting ideas. Its backend context window and its corresponding Draft Canvas can be completely wiped/reset when a sub-topic concludes, ensuring zero leak into the master architecture.
+
+📝 Layer 2: Consolidator Agent (The Semantic Filter)
+Role: Act as a "Git Committer" and information filter.
+
+Trigger: Activated only when the user explicitly issues a commit command via voice (e.g., "这个子模块可以了，同步到主画板中").
+
+Mechanism: Ingests the messy discussion history and the final state of the Draft Canvas. It filters out false starts, rejected hypotheses, and mental noise. It performs "Dehydration" to extract only final decisions.
+
+Output: Emits a deterministic, structured JSON Patch schema to mutate the Master Canvas and PRD.
+
+🏢 Layer 1: Master Agent (The System Architect)
+Role: Regulated, high-precision state controller.
+
+Context Boundary: Ingests clean, structural JSON Patches from Layer 2.
+
+State Management: Mutates global_mermaid_code (which directly reflects on the Master Canvas) and the structured prd_draft document.
+
+4. Visual Branching State Machine (画板分支管理)
+To support complex engineering trade-offs, implement a Visual Branching Workspace:
+
+FORK [Branch_Name]: Duplicate the current Master Canvas state into an isolated, semi-transparent overlay workspace on the Draft Canvas.
+
+SWITCH [Branch_Name]: Visually toggle focus between different design branches on the whiteboard, routing the user's voice to that specific branch context.
+
+MERGE [Branch_Name]: Pass the selected branch's local log to Layer 2, inject the final elements into the Master Canvas with a smooth merging layout animation, and destroy alternative visual branches to clear memory footprints.
+
+5. Implementation Stack & Technical Constraints
+When generating the codebase for this project, adhere to the following stack preferences:
+
+Backend & Orchestration: Python with LangGraph (preferred for multi-agent cyclic state machines) or a robust TypeScript alternative.
+
+Environment & Dependency Management: Strictly use uv for Python workspace management. Do not use standard pip or poetry.
+
+Frontend Interactivity: React Flow or AntV X6 for the interactive node canvas. Must utilize smooth layout transitions (e.g., via dagre engine integration) to avoid jarring "canvas layout jitter" when nodes are incrementally patched.
+
+Communication Protocol: Full-duplex WebSocket streams to tie fluid ASR processing with instant, reactive canvas mutations.
+
+6. Execution Command for OpenCode
+"Analyze the design specifications above completely, paying exceptional attention to the real-time canvas mutation requirements. Start by constructing the foundational state managers, WebSocket event protocols, and data models that allow Layer 3 (Sandbox Agent) to stream incremental canvas graph modifications (nodes, edges, positions) to the frontend Draft Canvas. Provide the LangGraph/Python state definitions first, fully optimized for a uv execution environment."

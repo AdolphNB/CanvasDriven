@@ -1,0 +1,7 @@
+{
+  "provider": "openai_compatible",
+  "apiMode": "chat_completions",
+  "model": "deepseek-chat",
+  "baseUrl": "https://api.deepseek.com",
+  "apiKey": "replace-with-your-api-key"
+}
