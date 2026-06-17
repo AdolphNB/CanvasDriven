@@ -177,9 +177,47 @@ button:disabled {
   border-bottom: 1px solid #e2e8f0;
 }
 
+.diagram-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .panel-header h2,
 .diagram-header h2 {
   font-size: 17px;
+}
+
+.diagram-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diagram-controls button {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.diagram-controls button:hover:not(:disabled) {
+  border-color: #0f766e;
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.diagram-controls span {
+  min-width: 46px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .messages {
@@ -244,17 +282,31 @@ button:disabled {
   flex: 1;
   min-height: 0;
   place-items: center;
-  overflow: auto;
+  overflow: hidden;
   padding: 18px;
   background:
     linear-gradient(#eef2f6 1px, transparent 1px),
     linear-gradient(90deg, #eef2f6 1px, transparent 1px),
     #fbfdff;
   background-size: 22px 22px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.diagram-surface.is-dragging {
+  cursor: grabbing;
+}
+
+.diagram-viewport {
+  transform-origin: center center;
+  transition: transform 120ms ease-out;
+  will-change: transform;
 }
 
 .diagram-svg {
   width: min(100%, 980px);
+  pointer-events: none;
 }
 
 .diagram-svg svg {
