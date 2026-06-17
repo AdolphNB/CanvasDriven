@@ -24,6 +24,7 @@ type CanvasStore = {
   llmConfig: LlmConfig;
   currentMermaid: string;
   architectureSummary: string;
+  streamingAssistantText: string;
   isThinking: boolean;
   eventLog: CanvasEvent[];
   socket: WebSocket | null;
@@ -47,6 +48,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   llmConfig: { provider: 'openai', apiMode: 'responses', model: 'gpt-5.2', apiKey: null, baseUrl: null },
   currentMermaid: initialMermaid,
   architectureSummary: 'Waiting for the first architecture discussion.',
+  streamingAssistantText: '',
   isThinking: false,
   eventLog: [],
   socket: null,
@@ -72,7 +74,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   sendCommand: (command) => {
     const { socket } = get();
     if (socket?.readyState !== WebSocket.OPEN) return;
-    if (command.type === 'chat.submit') set({ isThinking: true });
+    if (command.type === 'chat.submit') set({ isThinking: true, streamingAssistantText: '' });
     socket.send(JSON.stringify(command));
   },
   applySnapshot: (snapshot) => {
@@ -110,6 +112,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (event.type === 'chat.message') {
         return { messages: state.messages.concat(event.payload as ChatMessage), eventLog: state.eventLog.concat(event) };
       }
+      if (event.type === 'architect.delta') {
+        const payload = event.payload as { content?: string };
+        return {
+          streamingAssistantText: state.streamingAssistantText + (payload.content ?? ''),
+          isThinking: true,
+          eventLog: state.eventLog.concat(event),
+        };
+      }
       if (event.type === 'architect.response') {
         const payload = event.payload as ArchitectResponse;
         return {
@@ -120,6 +130,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           }),
           currentMermaid: payload.mermaidCode,
           architectureSummary: payload.architectureSummary,
+          streamingAssistantText: '',
           isThinking: false,
           eventLog: state.eventLog.concat(event),
         };

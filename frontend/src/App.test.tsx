@@ -3,12 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 
 describe('App', () => {
-  it('renders the command bar demo shell', () => {
+  it('renders the architect chat shell with a multiline prompt', () => {
     render(<App />);
 
     expect(screen.getByText('CanvasDriven')).toBeInTheDocument();
     expect(screen.getByText('需求讨论')).toBeInTheDocument();
     expect(screen.getByText('Mermaid Preview')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Speak or type an architecture idea')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Speak or type an architecture idea').tagName).toBe('TEXTAREA');
   });
 });

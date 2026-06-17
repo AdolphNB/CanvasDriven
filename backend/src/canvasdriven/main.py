@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from .llm import chunk_text_for_stream
 from .models import CanvasEvent, ClientCommand
 from .service import canvas_service
 from .state import SessionState, store
@@ -112,6 +113,18 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str) -> None:
             command = ClientCommand.model_validate(await websocket.receive_json())
             events = await handle_command(state, command)
             for event in events:
+                if event.type == "architect.response":
+                    payload = event.payload
+                    if isinstance(payload, dict) and isinstance(payload.get("assistantMessage"), str):
+                        for chunk in chunk_text_for_stream(payload["assistantMessage"]):
+                            delta_event = CanvasEvent(
+                                sessionId=state.id,
+                                layer="master",
+                                targetCanvas="master",
+                                type="architect.delta",
+                                payload={"content": chunk},
+                            )
+                            await websocket.send_json(delta_event.model_dump(mode="json"))
                 await websocket.send_json(event.model_dump(mode="json"))
     except WebSocketDisconnect:
         return

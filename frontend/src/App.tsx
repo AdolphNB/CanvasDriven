@@ -1,5 +1,5 @@
 import { Bot, KeyRound, Send, Settings2 } from 'lucide-react';
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MermaidPane } from './MermaidPane';
 import { useCanvasStore } from './store';
 
@@ -10,6 +10,7 @@ export function App() {
   const [provider, setProvider] = useState<'openai' | 'openai_compatible'>('openai');
   const [apiMode, setApiMode] = useState<'responses' | 'chat_completions'>('responses');
   const [baseUrl, setBaseUrl] = useState('');
+  const messagesRef = useRef<HTMLDivElement | null>(null);
   const {
     architectureSummary,
     connect,
@@ -20,19 +21,37 @@ export function App() {
     messages,
     sendCommand,
     sessionId,
+    streamingAssistantText,
   } = useCanvasStore();
 
   useEffect(() => {
     connect();
   }, [connect]);
 
+  useEffect(() => {
+    const element = messagesRef.current;
+    if (element) {
+      element.scrollTop = element.scrollHeight;
+    }
+  }, [messages, streamingAssistantText, isThinking]);
+
   const recentEvents = useMemo(() => eventLog.slice(-8).reverse(), [eventLog]);
+
+  function submitPrompt() {
+    if (!text.trim() || isThinking || connectionState !== 'connected') return;
+    sendCommand({ type: 'chat.submit', text });
+    setText('');
+  }
 
   function submitText(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!text.trim()) return;
-    sendCommand({ type: 'chat.submit', text });
-    setText('');
+    submitPrompt();
+  }
+
+  function handlePromptKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+    event.preventDefault();
+    submitPrompt();
   }
 
   function saveConfig(event: FormEvent<HTMLFormElement>) {
@@ -90,8 +109,8 @@ export function App() {
             <span className="eyebrow">Architect Chat</span>
             <h2>需求讨论</h2>
           </div>
-          <div className="messages">
-            {messages.length === 0 && (
+          <div className="messages" ref={messagesRef}>
+            {messages.length === 0 && !streamingAssistantText && (
               <div className="empty-state">
                 说明你的系统目标、约束或疑问。Agent 会以资深架构师角度讨论方案，并生成 Mermaid 架构图。
               </div>
@@ -102,8 +121,28 @@ export function App() {
                 <p>{message.content}</p>
               </article>
             ))}
-            {isThinking && <div className="thinking">Architect is reasoning and generating Mermaid...</div>}
+            {streamingAssistantText && (
+              <article className="message message-assistant message-streaming">
+                <span>Architect</span>
+                <p>{streamingAssistantText}</p>
+              </article>
+            )}
+            {isThinking && !streamingAssistantText && <div className="thinking">Architect is reasoning and generating Mermaid...</div>}
           </div>
+
+          <form className="prompt-bar" onSubmit={submitText}>
+            <textarea
+              rows={3}
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              onKeyDown={handlePromptKeyDown}
+              placeholder="Speak or type an architecture idea"
+            />
+            <button type="submit" disabled={isThinking || connectionState !== 'connected'}>
+              <Send size={17} />
+              Send
+            </button>
+          </form>
         </section>
 
         <MermaidPane code={currentMermaid} />
@@ -120,18 +159,6 @@ export function App() {
           ))}
         </div>
       </section>
-
-      <form className="prompt-bar" onSubmit={submitText}>
-        <input
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder="Speak or type an architecture idea"
-        />
-        <button type="submit" disabled={isThinking || connectionState !== 'connected'}>
-          <Send size={17} />
-          Send
-        </button>
-      </form>
     </main>
   );
 }

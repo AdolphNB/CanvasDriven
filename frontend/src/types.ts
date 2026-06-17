@@ -16,6 +16,7 @@ export type CanvasEventType =
   | 'commit.patch'
   | 'llm.configured'
   | 'chat.message'
+  | 'architect.delta'
   | 'architect.response';
 
 export type NodeKind = 'concept' | 'decision' | 'module' | 'risk' | 'note';

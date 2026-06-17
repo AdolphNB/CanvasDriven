@@ -34,6 +34,7 @@ class CanvasEventType(StrEnum):
     COMMIT_PATCH = "commit.patch"
     LLM_CONFIGURED = "llm.configured"
     CHAT_MESSAGE = "chat.message"
+    ARCHITECT_DELTA = "architect.delta"
     ARCHITECT_RESPONSE = "architect.response"
 
 

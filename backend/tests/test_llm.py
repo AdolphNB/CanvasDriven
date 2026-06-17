@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from canvasdriven.llm import parse_architect_response
-from canvasdriven.llm import build_chat_completions_payload, chat_completions_endpoint
+from canvasdriven.llm import (
+    build_chat_completions_payload,
+    chat_completions_endpoint,
+    chunk_text_for_stream,
+    parse_architect_response,
+)
 from canvasdriven.models import ChatMessage, LLMConfig
 
 
@@ -46,3 +50,12 @@ def test_build_chat_completions_payload_uses_messages_contract() -> None:
     assert payload["messages"][0]["role"] == "system"
     assert payload["messages"][-1]["role"] == "user"
     assert "多租户课程平台" in payload["messages"][-1]["content"]
+
+
+def test_chunk_text_for_stream_preserves_complete_text() -> None:
+    text = "第一段架构建议，需要先拆清边界。第二段说明数据流。"
+
+    chunks = chunk_text_for_stream(text, chunk_size=8)
+
+    assert "".join(chunks) == text
+    assert len(chunks) > 1

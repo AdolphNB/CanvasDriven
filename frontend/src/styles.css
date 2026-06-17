@@ -17,16 +17,18 @@ body {
 
 button,
 input,
+textarea,
 select {
   font: inherit;
 }
 
 .app-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 12px;
-  min-height: 100vh;
+  height: 100vh;
   padding: 12px;
+  overflow: hidden;
 }
 
 .command-bar,
@@ -98,14 +100,25 @@ select {
 }
 
 input,
+textarea,
 select {
-  height: 38px;
   min-width: 0;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 0 10px;
   color: #0f172a;
   background: #ffffff;
+}
+
+input,
+select {
+  height: 38px;
+  padding: 0 10px;
+}
+
+textarea {
+  padding: 10px 11px;
+  line-height: 1.45;
+  resize: none;
 }
 
 .llm-config input[type="password"] {
@@ -144,6 +157,7 @@ button:disabled {
   grid-template-columns: minmax(330px, 0.85fr) minmax(0, 1.35fr);
   gap: 12px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .chat-panel,
@@ -200,6 +214,15 @@ button:disabled {
   align-self: flex-end;
   border-color: #99f6e4;
   background: #ecfdf5;
+}
+
+.message-assistant {
+  align-self: flex-start;
+}
+
+.message-streaming {
+  border-color: #bae6fd;
+  background: #f0f9ff;
 }
 
 .message span {
@@ -279,18 +302,24 @@ button:disabled {
 }
 
 .prompt-bar {
+  flex-shrink: 0;
   padding: 10px;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
-.prompt-bar input {
+.prompt-bar textarea {
   flex: 1;
-  height: 44px;
+  min-height: 74px;
   font-size: 15px;
 }
 
 .prompt-bar button {
   min-width: 92px;
-  height: 44px;
+  height: 74px;
 }
 
 @media (max-width: 1060px) {
@@ -314,7 +343,7 @@ button:disabled {
 
   .workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(320px, 0.8fr) minmax(420px, 1.2fr);
+    grid-template-rows: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
   }
 
   .event-strip {
