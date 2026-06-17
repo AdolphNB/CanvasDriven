@@ -1,15 +1,10 @@
-import { Bot, KeyRound, Send, Settings2 } from 'lucide-react';
+import { Bot, Send } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { MermaidPane } from './MermaidPane';
 import { useCanvasStore } from './store';
 
 export function App() {
   const [text, setText] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [model, setModel] = useState('gpt-5.2');
-  const [provider, setProvider] = useState<'openai' | 'openai_compatible'>('openai');
-  const [apiMode, setApiMode] = useState<'responses' | 'chat_completions'>('responses');
-  const [baseUrl, setBaseUrl] = useState('');
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const {
     architectureSummary,
@@ -54,20 +49,6 @@ export function App() {
     submitPrompt();
   }
 
-  function saveConfig(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    sendCommand({
-      type: 'llm.configure',
-      llmConfig: {
-        provider,
-        apiMode,
-        model,
-        apiKey: apiKey || null,
-        baseUrl: baseUrl || null,
-      },
-    });
-  }
-
   return (
     <main className="app-shell">
       <header className="command-bar">
@@ -80,27 +61,6 @@ export function App() {
             <p>{sessionId.slice(0, 8)} / {connectionState}</p>
           </div>
         </div>
-
-        <form className="llm-config" onSubmit={saveConfig}>
-          <Settings2 size={16} />
-          <select value={provider} onChange={(event) => setProvider(event.target.value as 'openai' | 'openai_compatible')}>
-            <option value="openai">OpenAI</option>
-            <option value="openai_compatible">OpenAI Compatible</option>
-          </select>
-          <select value={apiMode} onChange={(event) => setApiMode(event.target.value as 'responses' | 'chat_completions')}>
-            <option value="responses">Responses</option>
-            <option value="chat_completions">Chat Completions</option>
-          </select>
-          <input value={model} onChange={(event) => setModel(event.target.value)} aria-label="Model" />
-          {provider === 'openai_compatible' && (
-            <input value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="Base URL" />
-          )}
-          <input value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder="API key or use env" type="password" />
-          <button type="submit" title="Apply LLM config">
-            <KeyRound size={15} />
-            Apply
-          </button>
-        </form>
       </header>
 
       <div className="workspace">
@@ -112,7 +72,7 @@ export function App() {
           <div className="messages" ref={messagesRef}>
             {messages.length === 0 && !streamingAssistantText && (
               <div className="empty-state">
-                说明你的系统目标、约束或疑问。Agent 会以资深架构师角度讨论方案，并生成 Mermaid 架构图。
+                说明你的系统目标、约束或疑问。Agent 会以资深架构师视角讨论方案，并生成 Mermaid 架构图。
               </div>
             )}
             {messages.map((message, index) => (

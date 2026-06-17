@@ -90,15 +90,6 @@ select {
   text-transform: uppercase;
 }
 
-.llm-config {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
-}
-
 input,
 textarea,
 select {
@@ -119,14 +110,6 @@ textarea {
   padding: 10px 11px;
   line-height: 1.45;
   resize: none;
-}
-
-.llm-config input[type="password"] {
-  width: 210px;
-}
-
-.llm-config input[aria-label="Model"] {
-  width: 130px;
 }
 
 button {
@@ -299,19 +282,23 @@ button:disabled {
 }
 
 .diagram-viewport {
+  min-width: 1120px;
   transform-origin: center center;
   transition: transform 120ms ease-out;
   will-change: transform;
 }
 
 .diagram-svg {
-  width: min(100%, 980px);
+  display: flex;
+  justify-content: center;
+  width: 1120px;
   pointer-events: none;
 }
 
 .diagram-svg svg {
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  min-width: 960px;
+  max-width: none;
   height: auto;
 }
 
@@ -376,21 +363,9 @@ button:disabled {
 
 @media (max-width: 1060px) {
   .command-bar,
-  .llm-config,
   .status-strip {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .llm-config {
-    width: 100%;
-  }
-
-  .llm-config input,
-  .llm-config select,
-  .llm-config input[type="password"],
-  .llm-config input[aria-label="Model"] {
-    width: 100%;
   }
 
   .workspace {

@@ -14,4 +14,14 @@ describe('App', () => {
     expect(screen.getByTitle('Reset view')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Speak or type an architecture idea').tagName).toBe('TEXTAREA');
   });
+
+  it('does not render browser-side LLM configuration controls', () => {
+    render(<App />);
+
+    expect(screen.queryByPlaceholderText(/api key/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle('Apply LLM config')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('OpenAI')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('Responses')).not.toBeInTheDocument();
+    expect(document.querySelector('input[type="password"]')).not.toBeInTheDocument();
+  });
 });
