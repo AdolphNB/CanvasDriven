@@ -57,7 +57,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     if (socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
 
     set({ connectionState: 'connecting' });
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/${sessionId}`);
+    const wsProto = globalThis.location?.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${wsProto}//${globalThis.location?.host}/ws/${sessionId}`);
     ws.onopen = () => set({ connectionState: 'connected' });
     ws.onclose = () => set({ connectionState: 'disconnected', socket: null, isThinking: false });
     ws.onerror = () => set({ connectionState: 'disconnected', isThinking: false });
