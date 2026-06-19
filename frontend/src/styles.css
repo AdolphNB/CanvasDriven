@@ -378,3 +378,259 @@ button:disabled {
     justify-content: flex-start;
   }
 }
+
+.download-btn {
+  border-color: #0f766e;
+  background: transparent;
+  color: #0f766e;
+  font-size: 14px;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 14px;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  width: 420px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid #d8dee9;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+  padding: 24px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-close {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border-color: #d8dee9;
+  background: #ffffff;
+  color: #64748b;
+  border-radius: 8px;
+}
+
+.modal-close:hover:not(:disabled) {
+  border-color: #0f766e;
+  color: #0f766e;
+  background: #ecfdf5;
+}
+
+.format-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.format-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.format-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 14px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.format-option input[type="radio"] {
+  accent-color: #0f766e;
+}
+
+.pricing-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pricing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pricing-card:hover:not(:disabled) {
+  border-color: #0f766e;
+  background: #ecfdf5;
+  color: #0f172a;
+}
+
+.pricing-card-free {
+  border-color: #99f6e4;
+  background: #ecfdf5;
+}
+
+.pricing-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pricing-subtitle {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.payment-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.payment-tab {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  border-radius: 0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.payment-tab.active {
+  background: #0f766e;
+  color: #ffffff;
+}
+
+.payment-tab:hover:not(.active):not(:disabled) {
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.qr-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.qr-image {
+  width: 256px;
+  height: 256px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.qr-placeholder {
+  width: 256px;
+  height: 256px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.payment-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 14px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.payment-success {
+  padding: 24px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+.payment-timeout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.payment-timeout p {
+  margin: 0;
+  color: #991b1b;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.retry-btn {
+  font-size: 14px;
+}
+
+.payment-hint {
+  margin: 12px 0 0;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.mock-pay-btn {
+  margin-top: 8px;
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 13px;
+  gap: 5px;
+}
+
+.mock-pay-btn:hover:not(:disabled) {
+  background: #f59e0b;
+  color: #ffffff;
+}
