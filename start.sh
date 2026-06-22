@@ -91,7 +91,8 @@ fi
 # --- Check payment env ---
 if [ -z "${XUNHU_APP_ID:-}" ] || [ -z "${XUNHU_APP_SECRET:-}" ]; then
     warn "XUNHU_APP_ID / XUNHU_APP_SECRET not set — payment will run in MOCK mode."
-    warn "Paid options will show a '模拟支付' button for local testing."
+else
+    log "Xunhu payment configured with APP_ID=${XUNHU_APP_ID}"
 fi
 
 # --- Start backend ---

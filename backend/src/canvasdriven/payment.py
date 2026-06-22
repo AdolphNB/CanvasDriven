@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import os
+import random
+import string
 import time
 import threading
 from datetime import datetime, timezone
@@ -12,9 +15,10 @@ from uuid import uuid4
 import httpx
 from pydantic import BaseModel, Field
 
+logger = logging.getLogger(__name__)
 
-XUNHU_APP_ID = os.environ.get("XUNHU_APP_ID", "20211120103")
-XUNHU_APP_SECRET = os.environ.get("XUNHU_APP_SECRET", "29b02cdb43555a21e75706551beae8fa")
+XUNHU_APP_ID = os.environ.get("XUNHU_APP_ID", "")
+XUNHU_APP_SECRET = os.environ.get("XUNHU_APP_SECRET", "")
 XUNHU_NOTIFY_URL = os.environ.get("NOTIFY_URL", "https://canvasdriven.singularitynear.com/payment/notify")
 XUNHU_API_URL = "https://api.dpweixin.com/payment/do.html"
 
@@ -75,6 +79,10 @@ def _is_mock_mode() -> bool:
     return not XUNHU_APP_ID or not XUNHU_APP_SECRET
 
 
+def _generate_nonce_str(length: int = 16) -> str:
+    return "".join(random.choices(string.ascii_letters + string.digits, k=length))
+
+
 async def create_payment(
     session_id: str,
     amount: int,
@@ -103,17 +111,26 @@ async def create_payment(
         "title": goods_name,
         "time": str(int(time.time())),
         "notify_url": XUNHU_NOTIFY_URL,
-        "type": "WAP",
-        "wap_url": XUNHU_NOTIFY_URL,
-        "wap_name": "CanvasDriven",
+        "nonce_str": _generate_nonce_str(),
+        "type": "NATIVE",
     }
     wechat_params["hash"] = _xunhu_sign(wechat_params)
 
     async with httpx.AsyncClient(timeout=15) as client:
-        wechat_resp = await client.post(XUNHU_API_URL, data=wechat_params)
-        wechat_data = wechat_resp.json()
-        if wechat_data.get("errcode") == 0:
-            order.wechatUrl = wechat_data.get("url_qrcode") or wechat_data.get("url")
+        try:
+            wechat_resp = await client.post(XUNHU_API_URL, data=wechat_params)
+            wechat_data = wechat_resp.json()
+            if wechat_data.get("errcode") == 0:
+                order.wechatUrl = wechat_data.get("url_qrcode") or wechat_data.get("url")
+            else:
+                logger.error(
+                    "Xunhu API error: errcode=%s errmsg=%s order=%s",
+                    wechat_data.get("errcode"),
+                    wechat_data.get("errmsg"),
+                    order.orderId,
+                )
+        except Exception:
+            logger.exception("Xunhu API call failed for order %s", order.orderId)
 
     order_store.add(order)
     return order
