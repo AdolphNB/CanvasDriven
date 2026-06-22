@@ -1,6 +1,12 @@
-import { Bot, Send } from 'lucide-react';
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Bot, Download, Send } from 'lucide-react';
+import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { DownloadButton } from './components/DownloadButton';
+import { PaymentModal } from './components/PaymentModal';
+import { PricingModal } from './components/PricingModal';
 import { MermaidPane } from './MermaidPane';
+import { PRICING_OPTIONS } from './paymentTypes';
+import type { DownloadFormat, PaymentOrder, PricingOption } from './paymentTypes';
+import { exportDiagram } from './utils/exportDiagram';
 import { useCanvasStore } from './store';
 
 export function App() {
@@ -32,6 +38,73 @@ export function App() {
 
   const recentEvents = useMemo(() => eventLog.slice(-8).reverse(), [eventLog]);
 
+  const [showPricing, setShowPricing] = useState(false);
+  const [paymentOrder, setPaymentOrder] = useState<PaymentOrder | null>(null);
+  const [pendingExport, setPendingExport] = useState<{ format: DownloadFormat; watermark: boolean } | null>(null);
+
+  const DEFAULT_MERMAID = 'flowchart LR\n  User[User requirement] --> Architect[Architect discussion]\n  Architect --> Mermaid[Mermaid architecture]';
+  const canDownload = currentMermaid !== DEFAULT_MERMAID;
+
+  function handleDownloadClick() {
+    setShowPricing(true);
+  }
+
+  async function handlePricingSelect(option: PricingOption, format: DownloadFormat) {
+    setShowPricing(false);
+    if (option.id === "free") {
+      try {
+        await exportDiagram({ format, watermark: true });
+      } catch {
+        alert("导出失败，请重试");
+      }
+      return;
+    }
+
+    try {
+      const resp = await fetch("http://127.0.0.1:8000/payment/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          amount: option.amount,
+          goodsName: option.goodsName,
+          format,
+          watermark: option.watermark,
+        }),
+      });
+      const data = await resp.json();
+      setPaymentOrder({
+        orderId: data.orderId,
+        amount: data.amount,
+        format: data.format,
+        watermark: data.watermark,
+        wechatUrl: data.wechatUrl,
+        alipayUrl: data.alipayUrl,
+      });
+      setPendingExport({ format, watermark: false });
+    } catch {
+      alert("创建订单失败，请重试");
+    }
+  }
+
+  const handlePaymentSuccess = useCallback(async () => {
+    setPaymentOrder(null);
+    if (pendingExport) {
+      try {
+        await exportDiagram({ format: pendingExport.format, watermark: false });
+      } catch {
+        alert("导出失败，请重试");
+      }
+      setPendingExport(null);
+    }
+  }, [pendingExport]);
+
+  function handlePaymentTimeout() {
+    setPaymentOrder(null);
+    setPendingExport(null);
+    setShowPricing(true);
+  }
+
   function submitPrompt() {
     if (!text.trim() || isThinking || connectionState !== 'connected') return;
     sendCommand({ type: 'chat.submit', text });
@@ -61,6 +134,7 @@ export function App() {
             <p>{sessionId.slice(0, 8)} / {connectionState}</p>
           </div>
         </div>
+        <DownloadButton disabled={!canDownload} onClick={handleDownloadClick} />
       </header>
 
       <div className="workspace">
@@ -119,6 +193,18 @@ export function App() {
           ))}
         </div>
       </section>
+
+      {showPricing && (
+        <PricingModal onSelect={handlePricingSelect} onClose={() => setShowPricing(false)} />
+      )}
+      {paymentOrder && (
+        <PaymentModal
+          order={paymentOrder}
+          onSuccess={handlePaymentSuccess}
+          onTimeout={handlePaymentTimeout}
+          onClose={() => { setPaymentOrder(null); setPendingExport(null); }}
+        />
+      )}
     </main>
   );
 }

@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from .llm import chunk_text_for_stream
 from .models import CanvasEvent, ClientCommand
+from .payment import _is_mock_mode, create_payment, order_store, verify_notify
 from .service import canvas_service
 from .state import SessionState, store
 
@@ -14,7 +15,7 @@ app = FastAPI(title="CanvasDriven API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,9 +43,56 @@ class BranchRequest(BaseModel):
     branchName: str
 
 
+class PaymentCreateRequest(BaseModel):
+    sessionId: str
+    amount: int
+    goodsName: str
+    format: str = "png"
+    watermark: bool = False
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/payment/create")
+async def payment_create(request: PaymentCreateRequest) -> dict:
+    order = await create_payment(
+        session_id=request.sessionId,
+        amount=request.amount,
+        goods_name=request.goodsName,
+        fmt=request.format,
+        watermark=request.watermark,
+    )
+    return order.model_dump(mode="json")
+
+
+@app.get("/payment/status/{order_id}")
+def payment_status(order_id: str) -> dict:
+    order = order_store.get(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="order not found")
+    return {"orderId": order.orderId, "status": order.status, "format": order.format, "watermark": order.watermark}
+
+
+@app.post("/payment/notify")
+async def payment_notify(request: Request) -> str:
+    form_data = dict(await request.form())
+    if verify_notify(form_data):
+        order_id = form_data.get("trade_order_id", "")
+        order_store.mark_paid(order_id)
+    return "success"
+
+
+@app.post("/payment/mock-pay/{order_id}")
+def mock_pay(order_id: str) -> dict:
+    if not _is_mock_mode():
+        raise HTTPException(status_code=403, detail="mock pay only available in dev mode")
+    success = order_store.mark_paid(order_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="order not found or already paid")
+    return {"orderId": order_id, "status": "paid"}
 
 
 @app.post("/sessions")
