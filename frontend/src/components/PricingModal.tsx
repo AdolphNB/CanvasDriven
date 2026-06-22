@@ -54,7 +54,7 @@ export function PricingModal({ onSelect, onClose }: PricingModalProps) {
             <button
               key={option.id}
               type="button"
-              className={`pricing-card${option.id === "free" ? " pricing-card-free" : ""}`}
+              className={`pricing-card${option.id === "candy" ? " pricing-card-recommended" : ""}`}
               onClick={() => handleSelect(option)}
             >
               <span className="pricing-label">{option.label}</span>

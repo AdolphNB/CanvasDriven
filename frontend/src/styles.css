@@ -498,9 +498,10 @@ button:disabled {
   color: #0f172a;
 }
 
-.pricing-card-free {
-  border-color: #99f6e4;
+.pricing-card-recommended {
+  border-color: #0f766e;
   background: #ecfdf5;
+  box-shadow: 0 0 0 1px #0f766e;
 }
 
 .pricing-label {
