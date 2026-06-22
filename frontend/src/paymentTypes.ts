@@ -15,7 +15,6 @@ export type PaymentOrder = {
   format: DownloadFormat;
   watermark: boolean;
   wechatUrl: string | null;
-  alipayUrl: string | null;
 };
 
 export const PRICING_OPTIONS: PricingOption[] = [

@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       '/health': 'http://127.0.0.1:8000',
       '/sessions': 'http://127.0.0.1:8000',
+      '/payment': 'http://127.0.0.1:8000',
       '/ws': {
         target: 'http://127.0.0.1:8000',
         ws: true,

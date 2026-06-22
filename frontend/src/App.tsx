@@ -61,7 +61,7 @@ export function App() {
     }
 
     try {
-      const resp = await fetch("http://127.0.0.1:8000/payment/create", {
+      const resp = await fetch("/payment/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -79,7 +79,6 @@ export function App() {
         format: data.format,
         watermark: data.watermark,
         wechatUrl: data.wechatUrl,
-        alipayUrl: data.alipayUrl,
       });
       setPendingExport({ format, watermark: false });
     } catch {

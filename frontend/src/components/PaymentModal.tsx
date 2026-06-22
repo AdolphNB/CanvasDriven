@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type { PaymentOrder } from "../paymentTypes";
 
-type PaymentTab = "wechat" | "alipay";
-
 type PaymentModalProps = {
   order: PaymentOrder;
   onSuccess: () => void;
@@ -16,19 +14,16 @@ const POLL_INTERVAL = 2000;
 const MAX_POLLS = 150;
 
 export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentModalProps) {
-  const [tab, setTab] = useState<PaymentTab>("wechat");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [status, setStatus] = useState<"pending" | "success" | "timeout">("pending");
   const pollCount = useRef(0);
 
-  const qrUrl = tab === "wechat" ? order.wechatUrl : order.alipayUrl;
-
   useEffect(() => {
-    if (!qrUrl) return;
-    QRCode.toDataURL(qrUrl, { width: 256, margin: 2 })
+    if (!order.wechatUrl) return;
+    QRCode.toDataURL(order.wechatUrl, { width: 256, margin: 2 })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(""));
-  }, [qrUrl]);
+  }, [order.wechatUrl]);
 
   useEffect(() => {
     if (status !== "pending") return;
@@ -41,7 +36,7 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
       }
 
       try {
-        const resp = await fetch(`http://127.0.0.1:8000/payment/status/${order.orderId}`);
+        const resp = await fetch(`/payment/status/${order.orderId}`);
         const data = await resp.json();
         if (data.status === "paid") {
           setStatus("success");
@@ -63,26 +58,9 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>扫码支付 ¥{getAmountYuan()}</h2>
+          <h2>微信支付 ¥{getAmountYuan()}</h2>
           <button type="button" className="modal-close" onClick={onClose}>
             <X size={18} />
-          </button>
-        </div>
-
-        <div className="payment-tabs">
-          <button
-            type="button"
-            className={`payment-tab${tab === "wechat" ? " active" : ""}`}
-            onClick={() => setTab("wechat")}
-          >
-            微信支付
-          </button>
-          <button
-            type="button"
-            className={`payment-tab${tab === "alipay" ? " active" : ""}`}
-            onClick={() => setTab("alipay")}
-          >
-            支付宝
           </button>
         </div>
 
@@ -90,27 +68,16 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
           {status === "pending" && (
             <>
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt={`${tab} QR code`} className="qr-image" />
+                <img src={qrDataUrl} alt="微信支付二维码" className="qr-image" />
               ) : (
                 <div className="qr-placeholder">
-                  {qrUrl ? "二维码加载中..." : `${tab === "wechat" ? "微信" : "支付宝"}通道暂不可用`}
+                  {order.wechatUrl ? "二维码加载中..." : "微信支付通道暂不可用"}
                 </div>
               )}
               <div className="payment-status">
                 <Loader2 size={16} className="spin" />
                 等待支付确认...
               </div>
-              <button
-                type="button"
-                className="mock-pay-btn"
-                onClick={async () => {
-                  try {
-                    await fetch(`http://127.0.0.1:8000/payment/mock-pay/${order.orderId}`, { method: "POST" });
-                  } catch { /* polling will pick it up */ }
-                }}
-              >
-                模拟支付（本地测试）
-              </button>
             </>
           )}
           {status === "success" && (

@@ -13,10 +13,10 @@ import httpx
 from pydantic import BaseModel, Field
 
 
-XUNHU_APP_ID = os.environ.get("XUNHU_APP_ID", "")
-XUNHU_APP_SECRET = os.environ.get("XUNHU_APP_SECRET", "")
-XUNHU_NOTIFY_URL = os.environ.get("NOTIFY_URL", "http://localhost:8000/payment/notify")
-XUNHU_API_URL = "https://api.xunhupay.com/payment/do.html"
+XUNHU_APP_ID = os.environ.get("XUNHU_APP_ID", "20211120103")
+XUNHU_APP_SECRET = os.environ.get("XUNHU_APP_SECRET", "29b02cdb43555a21e75706551beae8fa")
+XUNHU_NOTIFY_URL = os.environ.get("NOTIFY_URL", "https://canvasdriven.singularitynear.com/payment/notify")
+XUNHU_API_URL = "https://api.dpweixin.com/payment/do.html"
 
 ORDER_EXPIRY_SECONDS = 300
 
@@ -31,7 +31,6 @@ class PaymentOrder(BaseModel):
     status: Literal["pending", "paid", "expired"] = "pending"
     createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     wechatUrl: str | None = None
-    alipayUrl: str | None = None
 
 
 class OrderStore:
@@ -93,7 +92,6 @@ async def create_payment(
 
     if _is_mock_mode():
         order.wechatUrl = "https://pay.example.com/mock/wechat"
-        order.alipayUrl = "https://pay.example.com/mock/alipay"
         order_store.add(order)
         return order
 
@@ -111,20 +109,11 @@ async def create_payment(
     }
     wechat_params["hash"] = _xunhu_sign(wechat_params)
 
-    alipay_params = dict(wechat_params)
-    alipay_params["type"] = "WAP"
-
     async with httpx.AsyncClient(timeout=15) as client:
         wechat_resp = await client.post(XUNHU_API_URL, data=wechat_params)
         wechat_data = wechat_resp.json()
         if wechat_data.get("errcode") == 0:
             order.wechatUrl = wechat_data.get("url_qrcode") or wechat_data.get("url")
-
-        alipay_params["hash"] = _xunhu_sign(alipay_params)
-        alipay_resp = await client.post(XUNHU_API_URL, data=alipay_params)
-        alipay_data = alipay_resp.json()
-        if alipay_data.get("errcode") == 0:
-            order.alipayUrl = alipay_data.get("url_qrcode") or alipay_data.get("url")
 
     order_store.add(order)
     return order
