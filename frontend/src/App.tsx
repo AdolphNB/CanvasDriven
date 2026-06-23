@@ -1,4 +1,4 @@
-import { Bot, Download, Send } from 'lucide-react';
+import { Bot, Download, Home, Send } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DownloadButton } from './components/DownloadButton';
 import { PaymentModal } from './components/PaymentModal';
@@ -125,6 +125,10 @@ export function App() {
     <main className="app-shell">
       <header className="command-bar">
         <div className="brand">
+          <a className="home-link" href="https://singularitynear.com" target="_blank" rel="noopener noreferrer">
+            <Home size={16} />
+            <span>主页</span>
+          </a>
           <div className="brand-mark">
             <Bot size={20} />
           </div>

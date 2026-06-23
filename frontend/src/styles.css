@@ -65,6 +65,25 @@ select {
   color: #ffffff;
 }
 
+.home-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.home-link:hover {
+  background: #115e59;
+}
+
 .brand h1,
 .panel-header h2,
 .diagram-header h2 {
