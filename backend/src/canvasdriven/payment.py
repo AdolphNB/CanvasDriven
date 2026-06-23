@@ -121,7 +121,7 @@ async def create_payment(
             wechat_resp = await client.post(XUNHU_API_URL, data=wechat_params)
             wechat_data = wechat_resp.json()
             if wechat_data.get("errcode") == 0:
-                order.wechatUrl = wechat_data.get("url_qrcode") or wechat_data.get("url")
+                order.wechatUrl = wechat_data.get("url") or wechat_data.get("url_qrcode")
             else:
                 logger.error(
                     "Xunhu API error: errcode=%s errmsg=%s order=%s",
