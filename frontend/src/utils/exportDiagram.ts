@@ -6,12 +6,7 @@ type ExportOptions = {
 };
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-
-const INLINED_STYLE_PROPS = [
-  "fill", "stroke", "stroke-width", "font-family", "font-size",
-  "font-weight", "text-anchor", "dominant-baseline", "color",
-  "background", "opacity", "marker-end", "marker-start",
-];
+const EXPORT_SCALE = 4;
 
 const EXPORT_FONT_FAMILY = "'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
 
@@ -44,55 +39,6 @@ function resolveSvgDimensions(svg: SVGSVGElement): { width: number; height: numb
   return { width: 960, height: 600 };
 }
 
-function inlineStylesFromOriginal(original: SVGSVGElement, clone: SVGSVGElement): void {
-  const origElements = original.querySelectorAll("*");
-  const cloneElements = clone.querySelectorAll("*");
-
-  for (let i = 0; i < origElements.length; i++) {
-    const origEl = origElements[i];
-    const cloneEl = cloneElements[i];
-    if (!(origEl instanceof SVGElement || origEl instanceof HTMLElement)) continue;
-    if (!(cloneEl instanceof SVGElement || cloneEl instanceof HTMLElement)) continue;
-
-    const computed = window.getComputedStyle(origEl);
-    for (const prop of INLINED_STYLE_PROPS) {
-      const val = computed.getPropertyValue(prop);
-      if (val && val !== "none" && val !== "") {
-        cloneEl.style.setProperty(prop, val);
-      }
-    }
-
-    // Force font-family attribute on <text>/<tspan> so standalone SVG uses it
-    if (cloneEl.tagName === "text" || cloneEl.tagName === "tspan") {
-      const computedFont = computed.getPropertyValue("font-family") || EXPORT_FONT_FAMILY;
-      cloneEl.setAttribute("font-family", computedFont);
-
-      // Also force font-size and fill as attributes for robustness
-      const computedSize = computed.getPropertyValue("font-size");
-      if (computedSize) cloneEl.setAttribute("font-size", computedSize);
-      const computedFill = computed.getPropertyValue("fill");
-      if (computedFill && computedFill !== "none") cloneEl.setAttribute("fill", computedFill);
-    }
-  }
-}
-
-function inlineRootStyles(original: SVGSVGElement, clone: SVGSVGElement): void {
-  const computed = window.getComputedStyle(original);
-  for (const prop of INLINED_STYLE_PROPS) {
-    const val = computed.getPropertyValue(prop);
-    if (val && val !== "none" && val !== "") {
-      clone.style.setProperty(prop, val);
-    }
-  }
-}
-
-function copyStyleSheets(original: SVGSVGElement, clone: SVGSVGElement): void {
-  const styles = original.querySelectorAll("style");
-  for (const style of styles) {
-    clone.insertBefore(style.cloneNode(true), clone.firstChild);
-  }
-}
-
 function ensureFontInSvg(clone: SVGSVGElement): void {
   const existingStyles = clone.querySelectorAll("style");
   let hasFontFace = false;
@@ -112,11 +58,10 @@ function ensureFontInSvg(clone: SVGSVGElement): void {
 
     const styleEl = document.createElementNS(SVG_NS, "style");
     styleEl.setAttribute("type", "text/css");
-    styleEl.textContent = `text, tspan { font-family: ${EXPORT_FONT_FAMILY} !important; }`;
+    styleEl.textContent = `svg { font-family: ${EXPORT_FONT_FAMILY}; }`;
     defs.appendChild(styleEl);
   }
 
-  // Set font-family on the root SVG as a default
   if (!clone.getAttribute("font-family")) {
     clone.setAttribute("font-family", EXPORT_FONT_FAMILY);
   }
@@ -170,13 +115,12 @@ function svgToDataUrl(svgClone: SVGSVGElement): string {
 }
 
 async function svgToCanvas(dataUrl: string, width: number, height: number): Promise<HTMLCanvasElement> {
-  const scale = 2;
   const canvas = document.createElement("canvas");
-  canvas.width = width * scale;
-  canvas.height = height * scale;
+  canvas.width = width * EXPORT_SCALE;
+  canvas.height = height * EXPORT_SCALE;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D context not available");
-  ctx.scale(scale, scale);
+  ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
 
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -221,17 +165,10 @@ export async function exportDiagram(options: ExportOptions): Promise<void> {
   // 4. Add white background as the first element (behind everything)
   addWhiteBackground(clone);
 
-  // 5. Copy <style> blocks (Mermaid CSS class rules) into the clone
-  copyStyleSheets(svgEl, clone);
-
-  // 6. Ensure font-family is available in the standalone SVG
+  // 5. Ensure font-family is available in the standalone SVG
   ensureFontInSvg(clone);
 
-  // 7. Inline computed styles from the LIVE original onto the CLONE
-  inlineRootStyles(svgEl, clone);
-  inlineStylesFromOriginal(svgEl, clone);
-
-  // 8. Set correct pixel dimensions on the clone
+  // 6. Set correct pixel dimensions on the clone
   clone.setAttribute("width", String(width));
   clone.setAttribute("height", String(height));
 
@@ -239,12 +176,12 @@ export async function exportDiagram(options: ExportOptions): Promise<void> {
     clone.setAttribute("viewBox", `0 0 ${width} ${height}`);
   }
 
-  // 9. Add watermark if needed (after dimensions are set)
+  // 7. Add watermark if needed (after dimensions are set)
   if (options.watermark) {
     addWatermark(clone, width, height);
   }
 
-  // 10. Render to canvas and export
+  // 8. Render to canvas and export
   const dataUrl = svgToDataUrl(clone);
   const canvas = await svgToCanvas(dataUrl, width, height);
 
