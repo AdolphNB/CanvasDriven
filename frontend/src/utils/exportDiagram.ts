@@ -188,10 +188,16 @@ export async function exportDiagram(options: ExportOptions): Promise<void> {
   const timestamp = new Date().toISOString().slice(0, 10);
 
   if (options.format === "png") {
-    canvas.toBlob((blob) => {
-      if (!blob) throw new Error("PNG export failed");
-      downloadBlob(blob, `CanvasDriven-${timestamp}.png`);
-    }, "image/png");
+    await new Promise<void>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("PNG export failed"));
+          return;
+        }
+        downloadBlob(blob, `CanvasDriven-${timestamp}.png`);
+        resolve();
+      }, "image/png");
+    });
   } else {
     const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF({

@@ -87,15 +87,17 @@ export function App() {
   }
 
   const handlePaymentSuccess = useCallback(async () => {
-    setPaymentOrder(null);
-    if (pendingExport) {
-      try {
-        await exportDiagram({ format: pendingExport.format, watermark: false });
-      } catch {
-        alert("导出失败，请重试");
-      }
-      setPendingExport(null);
+    if (!pendingExport) {
+      setPaymentOrder(null);
+      return;
     }
+    try {
+      await exportDiagram({ format: pendingExport.format, watermark: false });
+    } catch {
+      alert("导出失败，请重试");
+    }
+    setPaymentOrder(null);
+    setPendingExport(null);
   }, [pendingExport]);
 
   function handlePaymentTimeout() {

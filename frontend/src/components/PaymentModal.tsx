@@ -1,4 +1,4 @@
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, FlaskConical } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type { PaymentOrder } from "../paymentTypes";
@@ -15,8 +15,9 @@ const MAX_POLLS = 150;
 
 export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState("");
-  const [status, setStatus] = useState<"pending" | "success" | "timeout">("pending");
-  const pollCount = useRef(0);
+  const [status, setStatus] = useState<"pending" | "success" | "downloading" | "timeout">("pending");
+  const pollCountRef = useRef(0);
+  const [pollCount, setPollCount] = useState(0);
 
   useEffect(() => {
     if (!order.wechatUrl) return;
@@ -29,8 +30,9 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
     if (status !== "pending") return;
 
     const timer = setInterval(async () => {
-      pollCount.current += 1;
-      if (pollCount.current >= MAX_POLLS) {
+      pollCountRef.current += 1;
+      setPollCount(pollCountRef.current);
+      if (pollCountRef.current >= MAX_POLLS) {
         setStatus("timeout");
         return;
       }
@@ -38,9 +40,13 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
       try {
         const resp = await fetch(`/payment/status/${order.orderId}`);
         const data = await resp.json();
+        console.log(`[Payment] poll #${pollCountRef.current}: status=${data.status}`);
         if (data.status === "paid") {
           setStatus("success");
-          setTimeout(onSuccess, 1200);
+          setTimeout(() => {
+            setStatus("downloading");
+            onSuccess();
+          }, 1200);
         }
       } catch {
         // continue polling on network error
@@ -49,6 +55,15 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
 
     return () => clearInterval(timer);
   }, [status, order.orderId, onSuccess]);
+
+  async function handleMockPay() {
+    try {
+      const resp = await fetch(`/payment/mock-pay/${order.orderId}`, { method: "POST" });
+      if (!resp.ok) return;
+      setStatus("downloading");
+      onSuccess();
+    } catch { }
+  }
 
   function getAmountYuan(): string {
     return `¥${order.amount}`;
@@ -76,12 +91,26 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
               )}
               <div className="payment-status">
                 <Loader2 size={16} className="spin" />
-                等待支付确认...
+                等待支付确认... ({pollCount}/{MAX_POLLS})
               </div>
+              <button
+                type="button"
+                className="mock-pay-btn"
+                onClick={handleMockPay}
+              >
+                <FlaskConical size={14} />
+                模拟支付完成
+              </button>
             </>
           )}
           {status === "success" && (
             <div className="payment-success">支付成功！</div>
+          )}
+          {status === "downloading" && (
+            <div className="payment-downloading">
+              <Loader2 size={16} className="spin" />
+              正在下载...
+            </div>
           )}
           {status === "timeout" && (
             <div className="payment-timeout">
