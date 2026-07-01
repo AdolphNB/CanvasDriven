@@ -13,6 +13,8 @@ import type {
 
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
+const THINKING_TIMEOUT_MS = 60_000;
+
 type CanvasStore = {
   sessionId: string;
   connectionState: ConnectionState;
@@ -37,6 +39,22 @@ type CanvasStore = {
 const initialSessionId = globalThis.crypto?.randomUUID?.() ?? `session-${Date.now()}`;
 const initialMermaid = 'flowchart LR\n  User[User requirement] --> Architect[Architect discussion]\n  Architect --> Mermaid[Mermaid architecture]';
 
+let thinkingTimer: ReturnType<typeof setTimeout> | null = null;
+
+function startThinkingTimeout(set: (partial: Partial<CanvasStore>) => void): void {
+  clearThinkingTimeout();
+  thinkingTimer = setTimeout(() => {
+    set({ isThinking: false, streamingAssistantText: '' });
+  }, THINKING_TIMEOUT_MS);
+}
+
+function clearThinkingTimeout(): void {
+  if (thinkingTimer !== null) {
+    clearTimeout(thinkingTimer);
+    thinkingTimer = null;
+  }
+}
+
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
   sessionId: initialSessionId,
   connectionState: 'disconnected',
@@ -60,8 +78,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const wsProto = globalThis.location?.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${wsProto}//${globalThis.location?.host}/ws/${sessionId}`);
     ws.onopen = () => set({ connectionState: 'connected' });
-    ws.onclose = () => set({ connectionState: 'disconnected', socket: null, isThinking: false });
-    ws.onerror = () => set({ connectionState: 'disconnected', isThinking: false });
+    ws.onclose = () => { clearThinkingTimeout(); set({ connectionState: 'disconnected', socket: null, isThinking: false }); };
+    ws.onerror = () => { clearThinkingTimeout(); set({ connectionState: 'disconnected', isThinking: false }); };
     ws.onmessage = (message) => {
       const parsed = JSON.parse(message.data);
       if (parsed.type === 'session.snapshot') {
@@ -75,7 +93,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   sendCommand: (command) => {
     const { socket } = get();
     if (socket?.readyState !== WebSocket.OPEN) return;
-    if (command.type === 'chat.submit') set({ isThinking: true, streamingAssistantText: '' });
+    if (command.type === 'chat.submit') { set({ isThinking: true, streamingAssistantText: '' }); startThinkingTimeout(set); }
     socket.send(JSON.stringify(command));
   },
   applySnapshot: (snapshot) => {
@@ -114,6 +132,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         return { messages: state.messages.concat(event.payload as ChatMessage), eventLog: state.eventLog.concat(event) };
       }
       if (event.type === 'architect.delta') {
+        clearThinkingTimeout();
         const payload = event.payload as { content?: string };
         return {
           streamingAssistantText: state.streamingAssistantText + (payload.content ?? ''),
@@ -122,6 +141,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         };
       }
       if (event.type === 'architect.response') {
+        clearThinkingTimeout();
         const payload = event.payload as ArchitectResponse;
         return {
           messages: state.messages.concat({

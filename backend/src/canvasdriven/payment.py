@@ -28,7 +28,7 @@ ORDER_EXPIRY_SECONDS = 300
 class PaymentOrder(BaseModel):
     orderId: str = Field(default_factory=lambda: str(uuid4()))
     sessionId: str
-    amount: int
+    amount: float
     goodsName: str
     format: Literal["png", "pdf"] = "png"
     watermark: bool = True
@@ -85,7 +85,7 @@ def _generate_nonce_str(length: int = 16) -> str:
 
 async def create_payment(
     session_id: str,
-    amount: int,
+    amount: float,
     goods_name: str,
     fmt: str,
     watermark: bool,
@@ -103,11 +103,12 @@ async def create_payment(
         order_store.add(order)
         return order
 
+    total_fee_cents = int(round(amount * 100))
     wechat_params: dict[str, str] = {
         "version": "1.1",
         "appid": XUNHU_APP_ID,
         "trade_order_id": order.orderId,
-        "total_fee": str(amount),
+        "total_fee": str(total_fee_cents),
         "title": goods_name,
         "time": str(int(time.time())),
         "notify_url": XUNHU_NOTIFY_URL,

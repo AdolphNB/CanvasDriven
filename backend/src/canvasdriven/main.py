@@ -52,7 +52,7 @@ class BranchRequest(BaseModel):
 
 class PaymentCreateRequest(BaseModel):
     sessionId: str
-    amount: int
+    amount: float
     goodsName: str
     format: str = "png"
     watermark: bool = False

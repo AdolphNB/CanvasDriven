@@ -175,7 +175,7 @@ export function App() {
               onKeyDown={handlePromptKeyDown}
               placeholder="Speak or type an architecture idea"
             />
-            <button type="submit" disabled={isThinking || connectionState !== 'connected'}>
+            <button type="submit" disabled={!text.trim() || isThinking || connectionState !== 'connected'}>
               <Send size={17} />
               Send
             </button>

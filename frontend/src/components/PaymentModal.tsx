@@ -51,7 +51,7 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
   }, [status, order.orderId, onSuccess]);
 
   function getAmountYuan(): string {
-    return order.amount.toFixed(0);
+    return order.amount.toFixed(2);
   }
 
   return (
