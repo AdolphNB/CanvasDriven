@@ -12,6 +12,7 @@ type PaymentModalProps = {
 
 const POLL_INTERVAL = 2000;
 const MAX_POLLS = 150;
+const MOCK_WECHAT_URL = "https://pay.example.com/mock/wechat";
 
 export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState("");
@@ -93,14 +94,16 @@ export function PaymentModal({ order, onSuccess, onTimeout, onClose }: PaymentMo
                 <Loader2 size={16} className="spin" />
                 等待支付确认... ({pollCount}/{MAX_POLLS})
               </div>
-              <button
-                type="button"
-                className="mock-pay-btn"
-                onClick={handleMockPay}
-              >
-                <FlaskConical size={14} />
-                模拟支付完成
-              </button>
+              {order.wechatUrl === MOCK_WECHAT_URL && (
+                <button
+                  type="button"
+                  className="mock-pay-btn"
+                  onClick={handleMockPay}
+                >
+                  <FlaskConical size={14} />
+                  模拟支付完成
+                </button>
+              )}
             </>
           )}
           {status === "success" && (
