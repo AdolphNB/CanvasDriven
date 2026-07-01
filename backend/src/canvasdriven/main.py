@@ -22,6 +22,8 @@ app.add_middleware(
     allow_origins=[
         "https://canvasdriven.singularitynear.com",
         "http://canvasdriven.singularitynear.com",
+        "https://canvas.singularitynear.com",
+        "http://canvas.singularitynear.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -52,7 +54,7 @@ class BranchRequest(BaseModel):
 
 class PaymentCreateRequest(BaseModel):
     sessionId: str
-    amount: float
+    amount: int
     goodsName: str
     format: str = "png"
     watermark: bool = False

@@ -95,7 +95,7 @@ function addWatermark(svg: SVGSVGElement, width: number, height: number): void {
   text.setAttribute("font-weight", "700");
   text.setAttribute("transform", "rotate(-30, 160, 90)");
   const dateStr = new Date().toLocaleDateString("zh-CN");
-  text.textContent = `CanvasDriven \u6C34\u5370 ${dateStr}`;
+  text.textContent = `canvas.singularitynear.com`;
   pattern.appendChild(text);
   defs.appendChild(pattern);
   svg.insertBefore(defs, svg.firstChild);

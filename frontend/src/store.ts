@@ -14,6 +14,8 @@ import type {
 type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 const THINKING_TIMEOUT_MS = 60_000;
+const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_MAX_MS = 30_000;
 
 type CanvasStore = {
   sessionId: string;
@@ -40,6 +42,9 @@ const initialSessionId = globalThis.crypto?.randomUUID?.() ?? `session-${Date.no
 const initialMermaid = 'flowchart LR\n  User[User requirement] --> Architect[Architect discussion]\n  Architect --> Mermaid[Mermaid architecture]';
 
 let thinkingTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let reconnectAttempt = 0;
+let intentionalClose = false;
 
 function startThinkingTimeout(set: (partial: Partial<CanvasStore>) => void): void {
   clearThinkingTimeout();
@@ -53,6 +58,30 @@ function clearThinkingTimeout(): void {
     clearTimeout(thinkingTimer);
     thinkingTimer = null;
   }
+}
+
+function scheduleReconnect(connect: () => void): void {
+  if (intentionalClose) return;
+  if (reconnectTimer !== null) return;
+  const delay = Math.min(RECONNECT_BASE_MS * Math.pow(2, reconnectAttempt), RECONNECT_MAX_MS);
+  const jitter = Math.random() * 500;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    reconnectAttempt += 1;
+    connect();
+  }, delay + jitter);
+}
+
+function clearReconnect(): void {
+  if (reconnectTimer !== null) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+}
+
+export function resetReconnect(): void {
+  reconnectAttempt = 0;
+  clearReconnect();
 }
 
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
@@ -74,12 +103,23 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const { socket, sessionId } = get();
     if (socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) return;
 
+    intentionalClose = false;
     set({ connectionState: 'connecting' });
     const wsProto = globalThis.location?.protocol === 'https:' ? 'wss:' : 'ws:';
     const ws = new WebSocket(`${wsProto}//${globalThis.location?.host}/ws/${sessionId}`);
-    ws.onopen = () => set({ connectionState: 'connected' });
-    ws.onclose = () => { clearThinkingTimeout(); set({ connectionState: 'disconnected', socket: null, isThinking: false }); };
-    ws.onerror = () => { clearThinkingTimeout(); set({ connectionState: 'disconnected', isThinking: false }); };
+    ws.onopen = () => {
+      reconnectAttempt = 0;
+      set({ connectionState: 'connected' });
+    };
+    ws.onclose = () => {
+      clearThinkingTimeout();
+      set({ connectionState: 'disconnected', socket: null, isThinking: false });
+      scheduleReconnect(get().connect);
+    };
+    ws.onerror = () => {
+      clearThinkingTimeout();
+      set({ connectionState: 'disconnected', isThinking: false });
+    };
     ws.onmessage = (message) => {
       const parsed = JSON.parse(message.data);
       if (parsed.type === 'session.snapshot') {

@@ -409,8 +409,38 @@ button:disabled {
 }
 
 .download-btn:hover:not(:disabled) {
-  background: #0f766e;
-  color: #ffffff;
+  background: #115e59;
+}
+
+.conn-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.conn-connected { color: #0f766e; }
+.conn-connecting { color: #ca8a04; }
+.conn-disconnected { color: #dc2626; }
+
+.reconnect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid #dc2626;
+  border-radius: 4px;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.reconnect-btn:hover {
+  background: #dc2626;
+  color: #fff;
 }
 
 .modal-overlay {

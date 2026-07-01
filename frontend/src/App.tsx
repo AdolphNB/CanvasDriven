@@ -1,4 +1,4 @@
-import { Bot, Download, Home, Send } from 'lucide-react';
+import { Bot, Download, Home, RefreshCw, Send } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DownloadButton } from './components/DownloadButton';
 import { PaymentModal } from './components/PaymentModal';
@@ -7,7 +7,7 @@ import { MermaidPane } from './MermaidPane';
 import { PRICING_OPTIONS } from './paymentTypes';
 import type { DownloadFormat, PaymentOrder, PricingOption } from './paymentTypes';
 import { exportDiagram } from './utils/exportDiagram';
-import { useCanvasStore } from './store';
+import { useCanvasStore, resetReconnect } from './store';
 
 export function App() {
   const [text, setText] = useState('');
@@ -134,7 +134,14 @@ export function App() {
           </div>
           <div>
             <h1>CanvasDriven</h1>
-            <p>{sessionId.slice(0, 8)} / {connectionState}</p>
+            <p className={`conn-state conn-${connectionState}`}>
+              {sessionId.slice(0, 8)} / {connectionState === 'connecting' ? '连接中…' : connectionState === 'connected' ? '已连接' : '断开连接'}
+              {connectionState === 'disconnected' && (
+                <button type="button" className="reconnect-btn" onClick={() => { resetReconnect(); connect(); }}>
+                  <RefreshCw size={12} /> 重连
+                </button>
+              )}
+            </p>
           </div>
         </div>
         <DownloadButton disabled={!canDownload} onClick={handleDownloadClick} />
