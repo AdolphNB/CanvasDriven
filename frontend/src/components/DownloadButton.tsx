@@ -15,7 +15,7 @@ export function DownloadButton({ disabled, onClick }: DownloadButtonProps) {
       title="下载架构图"
     >
       <Download size={16} />
-      下载
+      导出架构图
     </button>
   );
 }

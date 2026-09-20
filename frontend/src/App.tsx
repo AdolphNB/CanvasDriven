@@ -1,4 +1,4 @@
-import { Bot, Home, RefreshCw, Send } from 'lucide-react';
+import { ArrowUpRight, Bot, Boxes, FileText, Home, MessageSquare, RefreshCw, Send, ShoppingBag, Sparkles } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DownloadButton } from './components/DownloadButton';
 import { PaymentModal } from './components/PaymentModal';
@@ -37,7 +37,7 @@ export function App() {
 
   useEffect(() => {
     const element = messagesRef.current;
-    if (element && followMessages.current) {
+    if (element && followMessages.current && (messages.length > 0 || streamingAssistantText)) {
       element.scrollTop = element.scrollHeight;
     }
   }, [messages, streamingAssistantText, isThinking]);
@@ -142,15 +142,26 @@ export function App() {
     <main className="app-shell">
       <header className="command-bar">
         <div className="brand">
+          <div className="brand-mark">
+            <Boxes size={23} strokeWidth={1.7} />
+          </div>
+          <div>
+            <h1>CanvasDriven</h1>
+            <p className="brand-caption">ARCHITECTURE STUDIO</p>
+          </div>
+        </div>
+        <div className="header-actions">
           <a aria-label="主页（新窗口打开）" className="home-link" href="https://singularitynear.com" target="_blank" rel="noopener noreferrer">
             <Home size={16} />
             <span>主页</span>
           </a>
-          <div className="brand-mark">
-            <Bot size={20} />
-          </div>
-          <div>
-            <h1>CanvasDriven</h1>
+
+        <DownloadButton disabled={!canDownload} onClick={handleDownloadClick} />
+        </div>
+      </header>
+
+      <div className="workspace-heading">
+        <div><span className="eyebrow">你的架构工作台</span><h2>让想法，逐渐清晰<span>。</span></h2></div>
             <p className={`conn-state conn-${connectionState}`}>
               {connectionState === 'connecting' ? '连接中…' : connectionState === 'connected' ? '已连接' : '连接已断开，正在自动重连'}
               {connectionState === 'disconnected' && (
@@ -159,17 +170,13 @@ export function App() {
                 </button>
               )}
             </p>
-          </div>
-        </div>
-        <DownloadButton disabled={!canDownload} onClick={handleDownloadClick} />
-      </header>
-
+      </div>
       {(notice || exportBusy) && <div className="feedback" role="status">{exportBusy ? '正在准备下载，请稍候…' : notice}</div>}
       <div className="workspace">
         <section className="chat-panel">
           <div className="panel-header">
-            <span className="eyebrow">从想法到架构</span>
-            <h2>需求讨论</h2>
+            <div className="panel-title"><span className="panel-icon"><MessageSquare size={18} /></span><div><h2>需求讨论</h2><p>和架构助手一起完善方案</p></div></div>
+            <span className="panel-label">01 / DISCUSS</span>
           </div>
           <div className="messages" ref={messagesRef} aria-label="需求讨论记录" onScroll={() => {
             const element = messagesRef.current;
@@ -179,24 +186,26 @@ export function App() {
           }}>
             {messages.length === 0 && !streamingAssistantText && (
               <div className="empty-state">
+                <div className="welcome-mark"><Sparkles size={25} strokeWidth={1.5} /></div>
                 <h3>你想构建怎样的系统？</h3>
-                <p>描述目标、规模和技术约束，一起讨论方案，逐步生成架构图。</p>
+                <p>描述目标与约束，一起讨论方案，逐步生成架构图。</p>
+                <span className="starter-label">从一个灵感开始</span>
                 <div className="starter-prompts">
-                  {['设计一个支持库存和支付的电商系统', '设计日活十万的实时聊天系统', '帮我梳理一个知识库问答系统的架构'].map((example) => (
-                    <button type="button" key={example} onClick={() => { setText(example); promptRef.current?.focus(); }}>{example}</button>
+                  {['设计一个支持库存和支付的电商系统', '设计日活十万的实时聊天系统', '帮我梳理一个知识库问答系统的架构'].map((example, index) => (
+                    <button aria-label={example} type="button" key={example} onClick={() => { setText(example); promptRef.current?.focus(); }}><span className={`starter-icon starter-icon-${index}`}>{index === 0 ? <ShoppingBag size={17} /> : index === 1 ? <MessageSquare size={17} /> : <FileText size={17} />}</span><span className="starter-text"><strong>{['电商平台', '实时聊天', '智能知识库'][index]}</strong><small>{['库存、订单与支付如何协作', '为十万日活设计消息架构', '从知识检索到智能问答'][index]}</small></span><ArrowUpRight size={15} className="starter-arrow" /></button>
                   ))}
                 </div>
               </div>
             )}
             {messages.map((message, index) => (
               <article className={`message message-${message.role}`} key={`${message.createdAt}-${index}`}>
-                <span>{message.role === 'user' ? '你' : '架构助手'}</span>
+                <span className="message-author">{message.role === 'assistant' && <Bot size={14} />}{message.role === 'user' ? '你' : '架构助手'}</span>
                 <p>{message.content}</p>
               </article>
             ))}
             {streamingAssistantText && (
               <article className="message message-assistant message-streaming">
-                <span>架构助手</span>
+                <span className="message-author"><Bot size={14} />架构助手</span>
                 <p>{streamingAssistantText}</p>
               </article>
             )}
@@ -229,12 +238,12 @@ export function App() {
           <p className="prompt-hint" id="prompt-hint">{connectionState !== 'connected' ? '连接恢复后可发送，仍可继续编辑需求。' : 'Enter 发送 · Shift + Enter 换行'}</p>
         </section>
 
-        <MermaidPane code={currentMermaid} onReadyChange={setDiagramReady} />
+        <MermaidPane isPlaceholder={currentMermaid === initialMermaid} code={currentMermaid === initialMermaid ? 'flowchart LR\n  A(描述需求) --> B(讨论方案)\n  B --> C(生成架构)' : currentMermaid} onReadyChange={setDiagramReady} />
       </div>
 
       <section className="status-strip">
         <div>
-          <span className="eyebrow">方案摘要</span>
+          <span className="eyebrow"><FileText size={14} />方案摘要</span>
           <p>{architectureSummary}</p>
         </div>
         <details className="event-strip"><summary>运行记录</summary>

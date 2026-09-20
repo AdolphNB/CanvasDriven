@@ -1,4 +1,4 @@
-import { Minus, Plus, RotateCcw } from 'lucide-react';
+import { GitBranch, Minus, MousePointer2, Plus, RotateCcw } from 'lucide-react';
 import { PointerEvent, useEffect, useId, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
@@ -8,10 +8,10 @@ mermaid.initialize({
   theme: 'base',
   htmlLabels: false,
   themeVariables: {
-    primaryColor: '#ecfeff',
-    primaryBorderColor: '#0891b2',
+    primaryColor: '#f0f7f4',
+    primaryBorderColor: '#5c9484',
     primaryTextColor: '#0f172a',
-    lineColor: '#475569',
+    lineColor: '#7c9690',
     secondaryColor: '#f8fafc',
     tertiaryColor: '#eef2ff',
     fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
@@ -20,10 +20,11 @@ mermaid.initialize({
 
 type MermaidPaneProps = {
   code: string;
+  isPlaceholder?: boolean;
   onReadyChange?: (ready: boolean) => void;
 };
 
-export function MermaidPane({ code, onReadyChange }: MermaidPaneProps) {
+export function MermaidPane({ code, onReadyChange, isPlaceholder = false }: MermaidPaneProps) {
   const rawId = useId();
   const id = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const [loading, setLoading] = useState(true);
@@ -123,10 +124,7 @@ export function MermaidPane({ code, onReadyChange }: MermaidPaneProps) {
   return (
     <section className="mermaid-pane">
       <div className="diagram-header">
-        <div>
-          <span className="eyebrow">随讨论实时更新</span>
-          <h2>架构预览</h2>
-        </div>
+        <div className="panel-title"><span className="panel-icon"><GitBranch size={18} /></span><div><h2>架构预览</h2><p>{isPlaceholder ? '从一次讨论开始，让系统一目了然' : '随讨论实时更新'}</p></div></div>
         <div className="diagram-controls" aria-label="图表视图控制">
           <button type="button" title="缩小" aria-label="缩小" disabled={zoom <= 0.5} onClick={() => changeZoom(-0.1)}>
             <Minus size={15} />
@@ -149,18 +147,19 @@ export function MermaidPane({ code, onReadyChange }: MermaidPaneProps) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
+        {isPlaceholder && <span className="canvas-badge"><span /> 架构生成流程 · 示例</span>}
         {loading ? <div className="thinking" role="status">正在绘制架构图…</div> : error ? (
           <div className="diagram-error" role="alert"><strong>架构图暂时无法显示</strong><p>请在左侧发送“修复架构图语法”后重试。</p><details><summary>查看错误详情</summary><pre>{error}</pre></details></div>
         ) : (
           <div
-            className="diagram-viewport"
+            className={`diagram-viewport${isPlaceholder ? ' diagram-placeholder' : ''}`}
             style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
           >
             <div className="diagram-svg" dangerouslySetInnerHTML={{ __html: svg }} />
           </div>
         )}
       </div>
-      <p className="diagram-hint">拖动平移 · Ctrl / ⌘ + 滚轮缩放 · 点击复位适应画布</p>
+      <p className="diagram-hint"><MousePointer2 size={13} />拖动平移 · Ctrl / ⌘ + 滚轮缩放 · 点击复位适应画布</p>
     </section>
   );
 }
