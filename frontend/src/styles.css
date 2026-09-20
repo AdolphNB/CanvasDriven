@@ -27,6 +27,7 @@ select {
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 12px;
   height: 100vh;
+  height: 100dvh;
   padding: 12px;
   overflow: hidden;
 }
@@ -349,6 +350,7 @@ button:disabled {
   margin: 0;
   line-height: 1.55;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .diagram-surface {
@@ -364,7 +366,7 @@ button:disabled {
     #fbfdff;
   background-size: 22px 22px;
   cursor: grab;
-  touch-action: none;
+  touch-action: pan-y;
   user-select: none;
 }
 
@@ -373,7 +375,9 @@ button:disabled {
 }
 
 .diagram-viewport {
-  min-width: 1120px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   transform-origin: center center;
   transition: transform 120ms ease-out;
   will-change: transform;
@@ -382,15 +386,16 @@ button:disabled {
 .diagram-svg {
   display: flex;
   justify-content: center;
-  width: 1120px;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
 .diagram-svg svg {
-  width: auto;
-  min-width: 960px;
-  max-width: none;
-  height: auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100% !important;
+  height: 100%;
 }
 
 .diagram-error {
@@ -471,6 +476,8 @@ button:disabled {
 }
 
 .download-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
   border-color: #0f766e;
   background: transparent;
   color: #0f766e;
@@ -481,6 +488,7 @@ button:disabled {
 }
 
 .download-btn:hover:not(:disabled) {
+  color: #ffffff;
   background: #115e59;
 }
 
@@ -765,4 +773,48 @@ button:disabled {
 .mock-pay-btn:hover:not(:disabled) {
   background: #f59e0b;
   color: #ffffff;
+}
+
+/* Guidance, feedback and layouts that remain usable on smaller screens. */
+button:focus-visible, textarea:focus-visible, summary:focus-visible, a:focus-visible {
+  outline: 3px solid #0d9488;
+  outline-offset: 3px;
+}
+.chat-panel, .mermaid-pane, .message { min-width: 0; }
+.empty-state h3 { margin: 0 0 8px; color: #172033; font-size: 18px; }
+.empty-state p { margin: 0 0 16px; }
+.starter-prompts { display: grid; gap: 8px; }
+.starter-prompts button { text-align: left; justify-content: flex-start; padding: 10px 12px; background: white; border-color: #d8dee9; color: #0f766e; line-height: 1.5; }
+.starter-prompts button:hover:not(:disabled) { background: #ecfdf5; }
+.prompt-hint, .diagram-hint { margin: 0; padding: 8px 12px; color: #64748b; font-size: 12px; line-height: 1.5; }
+.diagram-hint { border-top: 1px solid #e2e8f0; }
+.latest-button { align-self: center; margin: 4px 12px; min-height: 32px; font-size: 12px; }
+.request-error { margin: 0; padding: 10px 14px; background: #fff7ed; color: #9a3412; font-size: 13px; line-height: 1.5; }
+.feedback { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); max-width: 90vw; z-index: 1100; padding: 12px 18px; background: #172033; color: white; border-radius: 8px; box-shadow: 0 4px 16px #17203333; }
+.status-strip > div { min-width: 0; flex: 1; }
+.status-strip p { max-height: 72px; overflow: auto; overflow-wrap: anywhere; }
+.event-strip { display: block; max-height: 96px; overflow: auto; font-size: 12px; color: #64748b; }
+.event-strip summary { cursor: pointer; padding: 4px; }
+.event-strip span { display: inline-block; margin: 3px; }
+.diagram-error pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 1060px) {
+  .app-shell { height: auto; min-height: 100dvh; overflow: visible; grid-template-rows: auto auto auto; }
+  .command-bar { flex-direction: row; align-items: center; }
+  .workspace { overflow: visible; grid-template-rows: minmax(420px, 65dvh) minmax(380px, 60dvh); }
+  .status-strip { align-items: stretch; }
+}
+@media (max-width: 540px) {
+  .app-shell { padding: 8px; gap: 8px; }
+  .brand { min-width: 0; gap: 8px; }
+  .brand-mark { display: none; }
+  .brand h1 { font-size: 16px; }
+  .home-link { padding: 8px; }
+  .home-link span { display: none; }
+  .diagram-header { flex-wrap: wrap; padding: 12px; }
+  .diagram-controls button { width: 40px; height: 40px; }
+  .prompt-bar button { min-width: 64px; padding: 0 10px; }
+  .conn-state { flex-wrap: wrap; gap: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
 }

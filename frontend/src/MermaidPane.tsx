@@ -1,5 +1,5 @@
 import { Minus, Plus, RotateCcw } from 'lucide-react';
-import { PointerEvent, WheelEvent, useEffect, useId, useRef, useState } from 'react';
+import { PointerEvent, useEffect, useId, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
 mermaid.initialize({
@@ -20,15 +20,19 @@ mermaid.initialize({
 
 type MermaidPaneProps = {
   code: string;
+  onReadyChange?: (ready: boolean) => void;
 };
 
-export function MermaidPane({ code }: MermaidPaneProps) {
+export function MermaidPane({ code, onReadyChange }: MermaidPaneProps) {
   const rawId = useId();
   const id = `mermaid-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const [loading, setLoading] = useState(true);
+  const [dragging, setDragging] = useState(false);
   const [svg, setSvg] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ pointerId: number; startX: number; startY: number; originX: number; originY: number } | null>(null);
 
   function resetView() {
@@ -46,19 +50,25 @@ export function MermaidPane({ code }: MermaidPaneProps) {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setError(null);
+    onReadyChange?.(false);
 
     async function renderDiagram() {
       try {
         const result = await mermaid.render(id, code);
         if (!cancelled) {
           setSvg(result.svg);
+          onReadyChange?.(true);
           setError(null);
           resetView();
         }
       } catch (renderError) {
         if (!cancelled) {
-          setError(renderError instanceof Error ? renderError.message : 'Unable to render Mermaid diagram');
+          setError(renderError instanceof Error ? renderError.message : '暂时无法绘制架构图');
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -66,15 +76,23 @@ export function MermaidPane({ code }: MermaidPaneProps) {
     return () => {
       cancelled = true;
     };
-  }, [code, id]);
+  }, [code, id, onReadyChange]);
 
-  function handleWheel(event: WheelEvent<HTMLDivElement>) {
-    event.preventDefault();
-    changeZoom(event.deltaY > 0 ? -0.1 : 0.1);
-  }
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    function handleWheel(event: WheelEvent) {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setZoom((current) => clampZoom(Number((current + (event.deltaY > 0 ? -0.1 : 0.1)).toFixed(2))));
+    }
+    surface.addEventListener('wheel', handleWheel, { passive: false });
+    return () => surface.removeEventListener('wheel', handleWheel);
+  }, []);
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || event.pointerType === 'touch') return;
+    setDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = {
       pointerId: event.pointerId,
@@ -98,6 +116,7 @@ export function MermaidPane({ code }: MermaidPaneProps) {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    setDragging(false);
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
@@ -105,32 +124,33 @@ export function MermaidPane({ code }: MermaidPaneProps) {
     <section className="mermaid-pane">
       <div className="diagram-header">
         <div>
-          <span className="eyebrow">Live Architecture</span>
-          <h2>Mermaid Preview</h2>
+          <span className="eyebrow">随讨论实时更新</span>
+          <h2>架构预览</h2>
         </div>
-        <div className="diagram-controls" aria-label="Diagram view controls">
-          <button type="button" title="Zoom out" onClick={() => changeZoom(-0.1)}>
+        <div className="diagram-controls" aria-label="图表视图控制">
+          <button type="button" title="缩小" aria-label="缩小" disabled={zoom <= 0.5} onClick={() => changeZoom(-0.1)}>
             <Minus size={15} />
           </button>
           <span>{Math.round(zoom * 100)}%</span>
-          <button type="button" title="Zoom in" onClick={() => changeZoom(0.1)}>
+          <button type="button" title="放大" aria-label="放大" disabled={zoom >= 3} onClick={() => changeZoom(0.1)}>
             <Plus size={15} />
           </button>
-          <button type="button" title="Reset view" onClick={resetView}>
+          <button type="button" title="适应画布" aria-label="适应画布" onClick={resetView}>
             <RotateCcw size={15} />
           </button>
         </div>
       </div>
       <div
-        className={`diagram-surface${dragRef.current ? ' is-dragging' : ''}`}
-        onWheel={handleWheel}
+        className={`diagram-surface${dragging ? ' is-dragging' : ''}`}
+        aria-busy={loading}
+        ref={surfaceRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {error ? (
-          <pre className="diagram-error">{error}</pre>
+        {loading ? <div className="thinking" role="status">正在绘制架构图…</div> : error ? (
+          <div className="diagram-error" role="alert"><strong>架构图暂时无法显示</strong><p>请在左侧发送“修复架构图语法”后重试。</p><details><summary>查看错误详情</summary><pre>{error}</pre></details></div>
         ) : (
           <div
             className="diagram-viewport"
@@ -140,6 +160,7 @@ export function MermaidPane({ code }: MermaidPaneProps) {
           </div>
         )}
       </div>
+      <p className="diagram-hint">拖动平移 · Ctrl / ⌘ + 滚轮缩放 · 点击复位适应画布</p>
     </section>
   );
 }

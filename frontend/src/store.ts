@@ -25,21 +25,23 @@ type CanvasStore = {
   branchGraphs: Record<string, CanvasGraph>;
   activeBranch: string | null;
   messages: ChatMessage[];
+  pendingUserMessages: ChatMessage[];
   llmConfig: LlmConfig;
   currentMermaid: string;
   architectureSummary: string;
   streamingAssistantText: string;
   isThinking: boolean;
+  requestError: string | null;
   eventLog: CanvasEvent[];
   socket: WebSocket | null;
   connect: () => void;
-  sendCommand: (command: ClientCommand) => void;
+  sendCommand: (command: ClientCommand) => boolean;
   applyEvent: (event: CanvasEvent) => void;
   applySnapshot: (snapshot: SessionSnapshot) => void;
 };
 
 const initialSessionId = globalThis.crypto?.randomUUID?.() ?? `session-${Date.now()}`;
-const initialMermaid = 'flowchart LR\n  User[User requirement] --> Architect[Architect discussion]\n  Architect --> Mermaid[Mermaid architecture]';
+export const initialMermaid = 'flowchart LR\n  User[User requirement] --> Architect[Architect discussion]\n  Architect --> Mermaid[Mermaid architecture]';
 
 let thinkingTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -49,7 +51,7 @@ let intentionalClose = false;
 function startThinkingTimeout(set: (partial: Partial<CanvasStore>) => void): void {
   clearThinkingTimeout();
   thinkingTimer = setTimeout(() => {
-    set({ isThinking: false, streamingAssistantText: '' });
+    set({ isThinking: false, requestError: '回复等待超时。你可以继续等待，或重新发送需求。' });
   }, THINKING_TIMEOUT_MS);
 }
 
@@ -92,11 +94,13 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   branchGraphs: {},
   activeBranch: null,
   messages: [],
+  pendingUserMessages: [],
   llmConfig: { provider: 'openai', apiMode: 'responses', model: 'gpt-5.2', apiKey: null, baseUrl: null },
   currentMermaid: initialMermaid,
-  architectureSummary: 'Waiting for the first architecture discussion.',
+  architectureSummary: '开始讨论后，这里会展示方案摘要。',
   streamingAssistantText: '',
   isThinking: false,
+  requestError: null,
   eventLog: [],
   socket: null,
   connect: () => {
@@ -113,12 +117,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     };
     ws.onclose = () => {
       clearThinkingTimeout();
-      set({ connectionState: 'disconnected', socket: null, isThinking: false });
+      set({ connectionState: 'disconnected', socket: null, isThinking: false, requestError: get().isThinking ? '连接中断，回复可能不完整。连接恢复后可重新发送需求。' : get().requestError });
       scheduleReconnect(get().connect);
     };
     ws.onerror = () => {
       clearThinkingTimeout();
-      set({ connectionState: 'disconnected', isThinking: false });
+      set({ connectionState: 'disconnected', isThinking: false, requestError: '连接异常，正在尝试恢复。' });
     };
     ws.onmessage = (message) => {
       const parsed = JSON.parse(message.data);
@@ -132,9 +136,32 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
   sendCommand: (command) => {
     const { socket } = get();
-    if (socket?.readyState !== WebSocket.OPEN) return;
-    if (command.type === 'chat.submit') { set({ isThinking: true, streamingAssistantText: '' }); startThinkingTimeout(set); }
-    socket.send(JSON.stringify(command));
+    if (socket?.readyState !== WebSocket.OPEN) {
+      set({ requestError: '消息未发送，请等待连接恢复后重试。' });
+      return false;
+    }
+    try {
+      socket.send(JSON.stringify(command));
+      if (command.type === 'chat.submit') {
+        const message: ChatMessage = {
+          role: 'user',
+          content: command.text,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          messages: state.messages.concat(message),
+          pendingUserMessages: state.pendingUserMessages.concat(message),
+          isThinking: true,
+          streamingAssistantText: '',
+          requestError: null,
+        }));
+        startThinkingTimeout(set);
+      }
+      return true;
+    } catch {
+      set({ requestError: '消息未发送，请检查连接后重试。' });
+      return false;
+    }
   },
   applySnapshot: (snapshot) => {
     set({
@@ -144,9 +171,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       branchGraphs: snapshot.branchGraphs,
       activeBranch: snapshot.activeBranch,
       messages: snapshot.messages ?? [],
+      pendingUserMessages: [],
       llmConfig: snapshot.llmConfig ?? { provider: 'openai', apiMode: 'responses', model: 'gpt-5.2', apiKey: null, baseUrl: null },
       currentMermaid: snapshot.currentMermaid ?? initialMermaid,
-      architectureSummary: snapshot.architectureSummary ?? 'Waiting for the first architecture discussion.',
+      architectureSummary: snapshot.architectureSummary ?? '开始讨论后，这里会展示方案摘要。',
     });
   },
   applyEvent: (event) => {
@@ -169,10 +197,22 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         return { llmConfig: event.payload as LlmConfig, eventLog: state.eventLog.concat(event) };
       }
       if (event.type === 'chat.message') {
-        return { messages: state.messages.concat(event.payload as ChatMessage), eventLog: state.eventLog.concat(event) };
+        const message = event.payload as ChatMessage;
+        // Replace the local echo when the server acknowledges it. Only match
+        // pending entries so deliberately repeated prompts remain separate.
+        const pending = message.role === 'user'
+          ? state.pendingUserMessages.find((item) => item.content === message.content)
+          : undefined;
+        return {
+          messages: pending
+            ? state.messages.map((item) => item === pending ? message : item)
+            : state.messages.concat(message),
+          pendingUserMessages: state.pendingUserMessages.filter((item) => item !== pending),
+          eventLog: state.eventLog.concat(event),
+        };
       }
       if (event.type === 'architect.delta') {
-        clearThinkingTimeout();
+        startThinkingTimeout(set);
         const payload = event.payload as { content?: string };
         return {
           streamingAssistantText: state.streamingAssistantText + (payload.content ?? ''),
@@ -189,6 +229,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             content: payload.assistantMessage,
             createdAt: event.createdAt,
           }),
+          requestError: null,
           currentMermaid: payload.mermaidCode,
           architectureSummary: payload.architectureSummary,
           streamingAssistantText: '',
