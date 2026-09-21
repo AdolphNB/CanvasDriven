@@ -24,8 +24,8 @@ input, select { height: 38px; padding: 0 10px; }
 textarea { resize: none; line-height: 1.7; }
 ::selection { background: #d0e9dc; color: #173d30; }
 * { scrollbar-width: thin; scrollbar-color: #cbd6cd transparent; }
-.app-shell { display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 18px; height: 100vh; height: 100dvh; padding: 0 28px 18px; max-width: 1920px; margin: auto; overflow: hidden; }
-.command-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 80px; border-bottom: 1px solid #dfe5de; }
+.app-shell { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; height: 100vh; height: 100dvh; padding: 0 28px 18px; max-width: 1920px; margin: auto; overflow: hidden; }
+.command-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 20px; min-height: 80px; border-bottom: 1px solid #dfe5de; }
 .brand, .header-actions { display: flex; align-items: center; gap: 12px; }
 .brand-mark { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; color: #f2f8e7; background: #245b49; box-shadow: 0 3px 6px #244b4912; }
 .brand h1 { margin: 0; font-size: 21px; font-weight: 700; letter-spacing: -.7px; }
@@ -34,11 +34,8 @@ textarea { resize: none; line-height: 1.7; }
 .home-link:hover { color: var(--accent); background: #e8eee7; }
 .download-btn { white-space: nowrap; flex-shrink: 0; min-height: 40px; font-size: 13px; box-shadow: 0 2px 3px #16402a0c; }
 .download-btn:disabled { opacity: 1; background: #e8eee8; color: #75867b; border-color: #dbe3db; box-shadow: none; }
-.workspace-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 2px 0 3px; }
 .eyebrow { display: block; margin: 0 0 6px; font-size: 10px; letter-spacing: 1.4px; font-weight: 600; color: var(--muted); }
-.workspace-heading h2 { margin: 0; font-size: 24px; letter-spacing: -.8px; font-weight: 650; }
-.workspace-heading h2 > span { color: #88a767; }
-.conn-state { display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 7px 11px; border: 1px solid #dfe6dc; border-radius: 30px; font-size: 11px; color: #577762; background: #edf3e9; }
+.conn-state { justify-self: end; display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 7px 11px; border: 1px solid #dfe6dc; border-radius: 30px; font-size: 11px; color: #577762; background: #edf3e9; }
 .conn-state::before { content: ''; width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
 .conn-connecting { color: #886923; background: #f9f5e8; border-color: #ede5cf; }
 .conn-disconnected { color: #976332; background: #faf4ea; border-color: #eddfcb; }
@@ -368,7 +365,6 @@ textarea { resize: none; line-height: 1.7; }
 @media (max-height: 800px) and (min-width: 1061px) {
   .app-shell { gap: 12px; padding-bottom: 12px; }
   .command-bar { min-height: 68px; }
-  .workspace-heading h2 { font-size: 21px; }
   .panel-header, .diagram-header { padding: 14px 18px; }
   .messages { padding: 12px 20px; }
   .welcome-mark { display: none; }
@@ -381,11 +377,16 @@ textarea { resize: none; line-height: 1.7; }
 }
 @media (max-width: 1200px) { .panel-label { display: none; } .diagram-header .panel-icon { display: none; } }
 @media (max-width: 1060px) {
-  .app-shell { height: auto; min-height: 100dvh; overflow: visible; grid-template-rows: auto auto auto auto; padding: 0 20px 20px; }
+  .app-shell { height: auto; min-height: 100dvh; overflow: visible; grid-template-rows: auto auto auto; padding: 0 20px 20px; }
   .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(620px, 75dvh) minmax(440px, 65dvh); }
   .status-strip { align-items: flex-start; }
   .event-strip { max-width: 35%; }
   .empty-state > p { max-width: none; }
+}
+@media (max-width: 760px) {
+  .command-bar { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 0; gap: 10px; }
+  .header-actions { grid-column: 2; grid-row: 1; }
+  .command-bar > .conn-state { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
 }
 @media (max-width: 540px) {
   .app-shell { padding: 0 12px 16px; gap: 16px; }
@@ -399,8 +400,6 @@ textarea { resize: none; line-height: 1.7; }
   .home-link span { display: none; }
   .download-btn { font-size: 11px; padding: 0 9px; min-height: 35px; }
   .download-btn svg { width: 13px; }
-  .workspace-heading { align-items: flex-start; flex-direction: column; gap: 12px; padding: 4px 2px; }
-  .workspace-heading h2 { font-size: 24px; }
   .conn-state { font-size: 10px; padding: 4px 9px; }
   .workspace { gap: 16px; }
   .panel-header, .diagram-header { padding: 16px; }

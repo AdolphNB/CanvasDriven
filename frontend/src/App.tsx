@@ -150,27 +150,24 @@ export function App() {
             <p className="brand-caption">ARCHITECTURE STUDIO</p>
           </div>
         </div>
+        <p className={`conn-state conn-${connectionState}`}>
+          {connectionState === 'connecting' ? '连接中…' : connectionState === 'connected' ? '已连接' : '连接已断开，正在自动重连'}
+          {connectionState === 'disconnected' && (
+            <button type="button" className="reconnect-btn" onClick={() => { resetReconnect(); connect(); }}>
+              <RefreshCw size={12} /> 重连
+            </button>
+          )}
+        </p>
         <div className="header-actions">
           <a aria-label="主页（新窗口打开）" className="home-link" href="https://singularitynear.com" target="_blank" rel="noopener noreferrer">
             <Home size={16} />
             <span>主页</span>
           </a>
 
-        <DownloadButton disabled={!canDownload} onClick={handleDownloadClick} />
+          <DownloadButton disabled={!canDownload} onClick={handleDownloadClick} />
         </div>
       </header>
 
-      <div className="workspace-heading">
-        <div><span className="eyebrow">你的架构工作台</span><h2>让想法，逐渐清晰<span>。</span></h2></div>
-            <p className={`conn-state conn-${connectionState}`}>
-              {connectionState === 'connecting' ? '连接中…' : connectionState === 'connected' ? '已连接' : '连接已断开，正在自动重连'}
-              {connectionState === 'disconnected' && (
-                <button type="button" className="reconnect-btn" onClick={() => { resetReconnect(); connect(); }}>
-                  <RefreshCw size={12} /> 重连
-                </button>
-              )}
-            </p>
-      </div>
       {(notice || exportBusy) && <div className="feedback" role="status">{exportBusy ? '正在准备下载，请稍候…' : notice}</div>}
       <div className="workspace">
         <section className="chat-panel">
