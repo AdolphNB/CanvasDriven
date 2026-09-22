@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,10 +12,11 @@ from pydantic import BaseModel
 
 from .llm import chunk_text_for_stream
 from .models import CanvasEvent, ClientCommand
-from .payment import _is_mock_mode, create_payment, order_store, verify_notify
+from .payment import InvalidOrder, _is_mock_mode, create_payment, order_store, verify_notify
 from .service import canvas_service
 from .state import SessionState, store
 
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CanvasDriven API")
 
@@ -56,7 +59,7 @@ class PaymentCreateRequest(BaseModel):
     sessionId: str
     amount: int
     goodsName: str
-    format: str = "png"
+    format: Literal["png", "pdf"] = "png"
     watermark: bool = False
 
 
@@ -67,13 +70,17 @@ def health() -> dict[str, str]:
 
 @app.post("/payment/create")
 async def payment_create(request: PaymentCreateRequest) -> dict:
-    order = await create_payment(
-        session_id=request.sessionId,
-        amount=request.amount,
-        goods_name=request.goodsName,
-        fmt=request.format,
-        watermark=request.watermark,
-    )
+    try:
+        order = await create_payment(
+            session_id=request.sessionId,
+            amount=request.amount,
+            goods_name=request.goodsName,
+            fmt=request.format,
+            watermark=request.watermark,
+        )
+    except InvalidOrder as exc:
+        logger.warning("payment create rejected: %s", exc)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return order.model_dump(mode="json")
 
 
@@ -88,9 +95,17 @@ def payment_status(order_id: str) -> dict:
 @app.post("/payment/notify")
 async def payment_notify(request: Request) -> str:
     form_data = dict(await request.form())
-    if verify_notify(form_data):
-        order_id = form_data.get("trade_order_id", "")
-        order_store.mark_paid(order_id)
+    if not verify_notify(form_data):
+        logger.warning("payment notify rejected: bad signature or missing trade_order_id")
+        raise HTTPException(status_code=400, detail="invalid notify signature")
+    order_id = str(form_data.get("trade_order_id", ""))
+    order = order_store.get(order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="order not found")
+    if order.status != "pending":
+        # 幂等：重复回调（paid / expired）不再处理，但回 success 以免网关反复重试
+        return "success"
+    order_store.mark_paid(order_id)
     return "success"
 
 

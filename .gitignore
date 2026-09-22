@@ -11,6 +11,12 @@ dist/
 *.out.log
 *.err.log
 
+# 订单库（SQLite，运行期生成，不提交）
+data/
+*.db
+*.db-wal
+*.db-shm
+
 config/llm.local.json
 
 frontend/vite.config.js
