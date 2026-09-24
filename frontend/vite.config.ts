@@ -7,6 +7,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5174,
     proxy: {
+      '/qrcode': 'http://127.0.0.1:8000',
       '/health': 'http://127.0.0.1:8000',
       '/sessions': 'http://127.0.0.1:8000',
       '/payment': 'http://127.0.0.1:8000',

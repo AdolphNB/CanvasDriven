@@ -13,12 +13,14 @@ from pydantic import BaseModel
 from .llm import chunk_text_for_stream
 from .models import CanvasEvent, ClientCommand
 from .payment import InvalidOrder, _is_mock_mode, create_payment, order_store, verify_notify
+from .qrcode import router as qrcode_router
 from .service import canvas_service
 from .state import SessionState, store
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CanvasDriven API")
+app.include_router(qrcode_router)
 
 app.add_middleware(
     CORSMiddleware,
